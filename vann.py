@@ -2,6 +2,8 @@ print("CHECK")
 
 import math as m
 import pygame as pg
+import random as rng
+
 clock = pg.time.Clock()
 
 global_size_mod = 4
@@ -16,6 +18,11 @@ class Scene():
         def check_empty(self, x, y):
             if (x,y) in self.coordinates:
                 if self.coordinates[(x,y)] == 0:
+                    return True
+            return False
+        def check_water(self,x,y):
+            if (x,y) in self.coordinates:
+                if self.coordinates[(x,y)] == 1:
                     return True
             return False
         def update(self):
@@ -100,11 +107,48 @@ class WaterDrop():
         scene = Scene.current_scene
         if scene.check_empty(self.x, self.y+1) == True:
             self.vel_y = 1
-        elif scene.check_empty(self.x+1, self.y) == True:
+        elif scene.check_empty(self.x + 1, self.y + 1) == True:
             self.vel_x = 1
-        elif scene.check_empty(self.x-1, self.y) == True:
+            self.vel_y = 1
+        elif scene.check_empty(self.x - 1, self.y + 1) == True:
             self.vel_x = -1
+            self.vel_y = 1
+        else:
+            rightDist = -3
+            leftDist = -3
+            if(scene.check_empty(self.x + 1, self.y) == True):
+                rightDist = self.check_overflow(1)
+            if(scene.check_empty(self.x - 1, self.y) == True):
+                leftDist = self.check_overflow(-1)
+            
+            if(rightDist > 0 and leftDist > 0):
+                if(rightDist < leftDist):
+                    self.vel_x = 1
+                elif(rightDist > leftDist):
+                    self.vel_x = -1
+                else:
+                    self.vel_x = rng.choice([-1,1])
+            else:
+                if(rightDist > 0):
+                    self.vel_x = 1
+                elif(leftDist > 0):
+                    self.vel_x = -1
     
+    def check_overflow(self, xDir):
+        scene = Scene.current_scene
+        xCur = xDir
+        
+        while len(scene.coordinates) - 1 > self.x + xCur > 1:
+            if scene.check_empty(self.x + xCur, self.y + 1):
+                return abs(xCur)
+            elif scene.check_empty(self.x + xCur + xDir, self.y) != True and scene.check_water(self.x + xCur + xDir, self.y) != True:
+                return -1
+            else:
+                xCur = xCur + xDir
+        return -2
+
+
+
     def move(self):
         previous_pos = (self.x, self.y)
         self.y += self.vel_y
@@ -119,7 +163,7 @@ class WaterDrop():
     
 scene = Scene()
 scene.update()
-drop1 = WaterDrop(global_size_mod,20,20,window)
+#drop1 = WaterDrop(global_size_mod,20,20,window)
 pyramid1 = BlockPyramid(50,99,40,60)
 pyramid1.load()
 print(scene.check_empty(50,70))
@@ -136,12 +180,11 @@ while contgame == True:
             mx, my = pg.mouse.get_pos()
             mx = m.floor(mx/global_size_mod)
             my = m.floor(my/global_size_mod)
-            for i in range(3):
-                for y in range(3):
+            for i in range(10):
+                for y in range(10):
                     klass = WaterDrop
                     instance = klass(global_size_mod,mx-1+y,my-1+i,window)
     window.fill((0,0,0))
-
 
     for inst in WaterDrop.instances:
         inst.check_move()
